@@ -1,11 +1,21 @@
 package ru.yandex.practicum.collector.handler;
 
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.collector.model.sensor.ClimateSensorEvent;
+import ru.yandex.practicum.collector.service.EventService;
 import ru.yandex.practicum.grpc.telemetry.event.ClimateSensorProto;
 import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 
+import java.time.Instant;
+
 @Component
 public class ClimateSensorEventHandler implements SensorEventHandler {
+
+    private final EventService eventService;
+
+    public ClimateSensorEventHandler(EventService eventService) {
+        this.eventService = eventService;
+    }
 
     @Override
     public SensorEventProto.PayloadCase getMessageType() {
@@ -14,9 +24,19 @@ public class ClimateSensorEventHandler implements SensorEventHandler {
 
     @Override
     public void handle(SensorEventProto event) {
-        System.out.println("Получено событие климатического датчика");
-        // получаем данные климатического датчика
         ClimateSensorProto climateSensor = event.getClimateSensor();
-        System.out.println("Влажность воздуха: " + climateSensor.getHumidity());
+
+        ClimateSensorEvent sensorEvent = new ClimateSensorEvent();
+        sensorEvent.setId(event.getId());
+        sensorEvent.setHubId(event.getHubId());
+        sensorEvent.setTimestamp(Instant.ofEpochSecond(
+                event.getTimestamp().getSeconds(),
+                event.getTimestamp().getNanos()
+        ));
+        sensorEvent.setTemperatureC(climateSensor.getTemperatureC());
+        sensorEvent.setHumidity(climateSensor.getHumidity());
+        sensorEvent.setCo2Level(climateSensor.getCo2Level());
+
+        eventService.collectSensorEvent(sensorEvent);
     }
 }
