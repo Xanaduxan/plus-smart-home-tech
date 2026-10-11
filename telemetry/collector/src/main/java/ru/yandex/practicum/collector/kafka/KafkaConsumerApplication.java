@@ -1,7 +1,5 @@
 package ru.yandex.practicum.collector.kafka;
 
-import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -11,13 +9,13 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.yandex.practicum.kafka.telemetry.deserializer.SensorEventDeserializer;
 import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 
-import java.io.IOException;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,12 +32,10 @@ public class KafkaConsumerApplication {
     private static final Duration POLL_TIMEOUT = Duration.ofSeconds(1);
     private static final int COMMIT_EVERY = 10;
 
-    public static void main(String[] args) throws IOException {
-        KafkaConsumer<String, byte[]> consumer =
+    public static void main(String[] args) {
+        KafkaConsumer<String, SensorEventAvro> consumer =
                 new KafkaConsumer<>(getConsumerProperties());
         Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
-        SpecificDatumReader<SensorEventAvro> reader =
-                new SpecificDatumReader<>(SensorEventAvro.getClassSchema());
         CountDownLatch closed = new CountDownLatch(1);
 
         Thread shutdownHook = new Thread(() -> {
@@ -77,11 +73,11 @@ public class KafkaConsumerApplication {
             });
 
             while (true) {
-                ConsumerRecords<String, byte[]> records = consumer.poll(POLL_TIMEOUT);
+                ConsumerRecords<String, SensorEventAvro> records = consumer.poll(POLL_TIMEOUT);
                 int count = 0;
 
-                for (ConsumerRecord<String, byte[]> record : records) {
-                    handleRecord(record, reader);
+                for (ConsumerRecord<String, SensorEventAvro> record : records) {
+                    handleRecord(record);
 
                     // Смещение обновляем только после успешной обработки.
                     currentOffsets.put(
@@ -125,17 +121,13 @@ public class KafkaConsumerApplication {
     }
 
     private static void handleRecord(
-            ConsumerRecord<String, byte[]> record,
-            SpecificDatumReader<SensorEventAvro> reader
-    ) throws IOException {
-        if (record.value() == null) {
+            ConsumerRecord<String, SensorEventAvro> record
+    ) {
+        SensorEventAvro event = record.value();
+
+        if (event == null) {
             throw new IllegalArgumentException("Получено пустое событие датчика");
         }
-
-        SensorEventAvro event = reader.read(
-                null,
-                DecoderFactory.get().binaryDecoder(record.value(), null)
-        );
 
         // Для учебного примера обработка — вывод события в лог.
         log.info("topic={}, partition={}, offset={}, key={}, event={}",
@@ -144,7 +136,7 @@ public class KafkaConsumerApplication {
     }
 
     private static void commitAsync(
-            KafkaConsumer<String, byte[]> consumer,
+            KafkaConsumer<String, SensorEventAvro> consumer,
             Map<TopicPartition, OffsetAndMetadata> currentOffsets
     ) {
         consumer.commitAsync(new HashMap<>(currentOffsets), (offsets, exception) -> {
@@ -161,8 +153,6 @@ public class KafkaConsumerApplication {
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, "sensor-consumer-group");
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 StringDeserializer.class);
-        properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                ByteArrayDeserializer.class);
 
         properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -171,6 +161,10 @@ public class KafkaConsumerApplication {
         properties.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, 330_000);
         properties.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 3_072_000);
         properties.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 307_200);
+        properties.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                SensorEventDeserializer.class.getName()
+        );
         return properties;
     }
 }
