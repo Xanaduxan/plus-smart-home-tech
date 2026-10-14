@@ -36,9 +36,6 @@ public class SensorEventMapper {
 
             case TemperatureSensorEvent temperature ->
                     TemperatureSensorAvro.newBuilder()
-                            .setId(temperature.getId())
-                            .setHubId(temperature.getHubId())
-                            .setTimestamp(temperature.getTimestamp())
                             .setTemperatureC(temperature.getTemperatureC())
                             .setTemperatureF(temperature.getTemperatureF())
                             .build();
