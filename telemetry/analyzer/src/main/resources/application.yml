@@ -1,44 +1,18 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/telemetry_analyzer
-    username: dbuser
-    password: '12345'
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-
-analyzer:
-  kafka:
-    bootstrap-servers: localhost:9092
-    poll-timeout: 1s
-
-    hubs:
-      topic: telemetry.hubs.v1
-      group-id: analyzer-hub-events-group
-      enable-auto-commit: false
-      auto-offset-reset: earliest
-      max-poll-records: 100
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.yandex.practicum.kafka.telemetry.deserializer.HubEventDeserializer
-
-    snapshots:
-      topic: telemetry.snapshots.v1
-      group-id: analyzer-snapshots-group
-      enable-auto-commit: false
-      auto-offset-reset: earliest
-      max-poll-records: 100
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: ru.yandex.practicum.kafka.telemetry.deserializer.SensorsSnapshotDeserializer
-grpc:
+  application:
+    name: analyzer
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        serviceId: config-server
+      fail-fast: true
+      retry:
+        useRandomPolicy: true
+        max-interval: 6000
+eureka:
   client:
-    hub-router:
-      address: 'static://localhost:59090'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
