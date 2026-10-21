@@ -84,7 +84,8 @@ public class ProductService {
             product.setActive(request.active());
         }
 
-        return productMapper.toDto(product);
+        Product savedProduct = productRepository.save(product);
+        return productMapper.toDto(savedProduct);
     }
 
     private Product findProduct(Long id) {

@@ -59,7 +59,8 @@ public class InventoryService {
         }
 
         inventory.setQuantity(request.quantity());
-        return inventoryMapper.toDto(inventory);
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        return inventoryMapper.toDto(savedInventory);
     }
 
     @Transactional
