@@ -3,6 +3,11 @@ server:
   forward-headers-strategy: framework
 
 spring:
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
   datasource:
     url: jdbc:postgresql://localhost:5432/order_db
     username: dbuser
