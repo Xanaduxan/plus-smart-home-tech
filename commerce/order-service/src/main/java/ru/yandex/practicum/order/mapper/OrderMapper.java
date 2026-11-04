@@ -34,9 +34,7 @@ public class OrderMapper {
         for (OrderItemRequest itemRequest : request.items()) {
             OrderItem item = new OrderItem();
             item.setProductId(itemRequest.productId());
-            item.setProductName(itemRequest.productName());
             item.setQuantity(itemRequest.quantity());
-            item.setPrice(itemRequest.price());
 
             order.addItem(item);
         }

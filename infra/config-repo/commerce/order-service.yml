@@ -1,7 +1,13 @@
 server:
   port: 0
+  forward-headers-strategy: framework
 
 spring:
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
   datasource:
     url: jdbc:postgresql://localhost:5432/order_db
     username: dbuser
@@ -12,3 +18,8 @@ spring:
   sql:
     init:
       mode: never
+springdoc:
+  api-docs:
+    path: /docs/orders/v3/api-docs
+  swagger-ui:
+    path: /docs/orders/swagger-ui.html
