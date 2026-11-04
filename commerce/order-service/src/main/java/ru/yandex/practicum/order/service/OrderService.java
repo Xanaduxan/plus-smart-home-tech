@@ -3,9 +3,12 @@ package ru.yandex.practicum.order.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.order.client.ProductClient;
+import ru.yandex.practicum.order.client.dto.ProductResponse;
 import ru.yandex.practicum.order.dto.CreateOrderRequest;
 import ru.yandex.practicum.order.dto.OrderDto;
 import ru.yandex.practicum.order.entity.Order;
+import ru.yandex.practicum.order.entity.OrderItem;
 import ru.yandex.practicum.order.exception.NotFoundException;
 import ru.yandex.practicum.order.mapper.OrderMapper;
 import ru.yandex.practicum.order.repository.OrderRepository;
@@ -20,6 +23,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final ProductClient productClient;
 
     public List<OrderDto> getAllOrders() {
         return orderRepository.findAll().stream()
@@ -40,10 +44,17 @@ public class OrderService {
                 .map(orderMapper::toDto)
                 .toList();
     }
-
     @Transactional
     public OrderDto createOrder(CreateOrderRequest request) {
         Order order = orderMapper.toEntity(request);
+
+        for (OrderItem item : order.getItems()) {
+            ProductResponse product =
+                    productClient.getProductById(item.getProductId());
+
+            item.setProductName(product.name());
+            item.setPrice(product.price());
+        }
 
         BigDecimal totalPrice = order.getItems().stream()
                 .map(item -> item.getPrice()

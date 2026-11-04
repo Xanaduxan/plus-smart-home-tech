@@ -38,6 +38,8 @@ services:
     image: postgres:16.1
     container_name: postgres
     hostname: postgres
+    networks:
+      - database
     environment:
       POSTGRES_USER: dbuser
       POSTGRES_PASSWORD: 12345
@@ -53,3 +55,9 @@ services:
     #      - postgres:/data/postgres
     ports:
       - "5432:5432"
+
+networks:
+  database:
+    ipam:
+      config:
+        - subnet: 172.30.240.0/24

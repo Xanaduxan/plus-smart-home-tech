@@ -1,5 +1,6 @@
 server:
   port: 0
+  forward-headers-strategy: framework
 
 spring:
   datasource:
@@ -12,3 +13,8 @@ spring:
   sql:
     init:
       mode: never
+springdoc:
+  api-docs:
+    path: /docs/orders/v3/api-docs
+  swagger-ui:
+    path: /docs/orders/swagger-ui.html
